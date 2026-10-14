@@ -1,0 +1,92 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper Functions ──────────────────────────────────────────────────────
+
+    // Verify the requesting user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Verify the requesting user owns the document (tenant isolation)
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Validate user metadata document schema on create/update
+    function isValidUserDoc(data) {
+      return data.keys().hasAll(['email', 'displayName', 'updatedAt'])
+        && data.email is string && data.email.size() > 0
+        && data.displayName is string
+        && data.updatedAt is timestamp
+        // Optional nullable fields must be string or null when present
+        && (!data.keys().hasAny(['linkedSheetId'])   || data.linkedSheetId   == null || data.linkedSheetId   is string)
+        && (!data.keys().hasAny(['linkedSheetUrl'])  || data.linkedSheetUrl  == null || data.linkedSheetUrl  is string)
+        && (!data.keys().hasAny(['syncKeyHash'])     || data.syncKeyHash     == null || data.syncKeyHash     is string);
+    }
+
+    // Validate booking document schema on create
+    function isValidBookingCreate(data) {
+      return data.keys().hasAll([
+          'bookingId', 'dacId', 'bookingDate', 'cost', 'delivered', 'createdAt'
+        ])
+        && data.bookingId   is string  && data.bookingId.size()   > 0
+        && data.dacId       is string  && data.dacId.size()       > 0
+        && data.bookingDate is string  && data.bookingDate.size() == 10
+        && data.cost        is number  && data.cost > 0
+        && data.delivered   is bool
+        && data.createdAt   is number
+        // deliveredAt is optional null on create
+        && (!data.keys().hasAny(['deliveredAt']) || data.deliveredAt == null || data.deliveredAt is string);
+    }
+
+    // Validate booking document schema on update (partial update allowed)
+    function isValidBookingUpdate(data) {
+      // Only allow updating specific safe fields
+      let allowedUpdateKeys = ['delivered', 'deliveredAt', 'cost', 'dacId', 'bookingDate'];
+      return data.diff(resource.data).affectedKeys().hasOnly(allowedUpdateKeys)
+        && (!data.keys().hasAny(['delivered'])   || data.delivered   is bool)
+        && (!data.keys().hasAny(['deliveredAt']) || data.deliveredAt == null || data.deliveredAt is string)
+        && (!data.keys().hasAny(['cost'])        || (data.cost is number && data.cost > 0))
+        && (!data.keys().hasAny(['dacId'])       || (data.dacId is string && data.dacId.size() > 0))
+        && (!data.keys().hasAny(['bookingDate']) || (data.bookingDate is string && data.bookingDate.size() == 10));
+    }
+
+    // ─── User Metadata Documents ───────────────────────────────────────────────
+    match /users/{uid} {
+      // Read: only the authenticated owner
+      allow read: if isOwner(uid);
+
+      // Create: only the owner, with schema validation
+      allow create: if isOwner(uid) && isValidUserDoc(request.resource.data);
+
+      // Update: only the owner, with schema validation
+      allow update: if isOwner(uid) && isValidUserDoc(request.resource.data);
+
+      // Delete: not permitted (profile cleanup handled by server-side functions)
+      allow delete: if false;
+
+      // ─── Bookings Subcollection ──────────────────────────────────────────────
+      match /bookings/{bookingId} {
+        // Read: only the authenticated owner
+        allow read: if isOwner(uid);
+
+        // Create: only the owner, with schema validation
+        allow create: if isOwner(uid) && isValidBookingCreate(request.resource.data);
+
+        // Update: only the owner, with restricted field set
+        allow update: if isOwner(uid) && isValidBookingUpdate(request.resource.data);
+
+        // Delete: only the owner (allow removing erroneous bookings)
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    // ─── Deny All Other Paths ─────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

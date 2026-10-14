@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Fluido — Manage and analyze your domestic LPG/Gas booking records with real-time cloud sync, Google Sheets integration, and rich analytics." />
+  <meta name="theme-color" content="#0f1117" />
+  <meta property="og:title" content="Fluido — LPG Gas Booking Manager" />
+  <meta property="og:description" content="Track, analyze, and sync your domestic LPG gas bookings with Fluido." />
+  <title>Fluido — LPG Gas Booking Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     TOAST NOTIFICATION REGION
+══════════════════════════════════════════════════════════════════════════════ -->
+<div id="toast-container" role="alert" aria-live="polite" aria-atomic="false"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     LOADING OVERLAY  (shown during auth resolution)
+══════════════════════════════════════════════════════════════════════════════ -->
+<div id="loading-overlay" aria-hidden="false" role="status" aria-label="Loading Fluido…">
+  <div class="loader-inner">
+    <div class="loader-flame">
+      <svg viewBox="0 0 48 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M24 4C24 4 10 18 10 32C10 40.837 16.163 48 24 48C31.837 48 38 40.837 38 32C38 18 24 4 24 4Z" fill="url(#flame-grad)"/>
+        <path d="M24 28C24 28 17 35 17 40C17 44.418 20.134 48 24 48C27.866 48 31 44.418 31 40C31 35 24 28 24 28Z" fill="url(#inner-grad)"/>
+        <defs>
+          <linearGradient id="flame-grad" x1="24" y1="4" x2="24" y2="48" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#f97316"/>
+            <stop offset="1" stop-color="#ef4444"/>
+          </linearGradient>
+          <linearGradient id="inner-grad" x1="24" y1="28" x2="24" y2="48" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#fef3c7"/>
+            <stop offset="1" stop-color="#fbbf24"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <span class="loader-text">Fluido</span>
+    <div class="loader-dots"><span></span><span></span><span></span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     AUTH VIEW  (hidden after login)
+══════════════════════════════════════════════════════════════════════════════ -->
+<div id="auth-view" aria-hidden="true" style="display:none;">
+  <div class="auth-backdrop"></div>
+  <div class="auth-container">
+
+    <!-- Theme toggle on auth screen -->
+    <button id="auth-theme-toggle" class="theme-toggle-btn" aria-label="Toggle colour theme" title="Toggle colour theme">
+      <span class="theme-icon theme-icon--sun" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </span>
+      <span class="theme-icon theme-icon--moon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </span>
+    </button>
+
+    <div class="auth-card">
+      <!-- Logo -->
+      <div class="auth-logo">
+        <div class="auth-logo-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 4C24 4 10 18 10 32C10 40.837 16.163 48 24 48C31.837 48 38 40.837 38 32C38 18 24 4 24 4Z" fill="url(#flame-auth)"/>
+            <path d="M24 28C24 28 17 35 17 40C17 44.418 20.134 48 24 48C27.866 48 31 44.418 31 40C31 35 24 28 24 28Z" fill="url(#inner-auth)"/>
+            <defs>
+              <linearGradient id="flame-auth" x1="24" y1="4" x2="24" y2="48" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#f97316"/><stop offset="1" stop-color="#ef4444"/>
+              </linearGradient>
+              <linearGradient id="inner-auth" x1="24" y1="28" x2="24" y2="48" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#fef3c7"/><stop offset="1" stop-color="#fbbf24"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="auth-logo-text">
+          <h1>Fluido</h1>
+          <p>LPG Gas Booking Manager</p>
+        </div>
+      </div>
+
+      <!-- Tagline -->
+      <p class="auth-tagline">Track, analyze, and sync your domestic gas bookings — all in one secure workspace.</p>
+
+      <!-- Feature pills -->
+      <ul class="auth-features" aria-label="Key features">
+        <li><span class="pill-icon" aria-hidden="true">🔒</span>Secure cloud sync</li>
+        <li><span class="pill-icon" aria-hidden="true">📊</span>Visual analytics</li>
+        <li><span class="pill-icon" aria-hidden="true">📄</span>Google Sheets integration</li>
+      </ul>
+
+      <!-- Google Sign-In Button -->
+      <button id="btn-google-signin" class="btn-google-signin" aria-label="Sign in with Google">
+        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        <span>Continue with Google</span>
+      </button>
+
+      <p class="auth-legal">By signing in, you agree to our <a href="#" id="terms-link">Terms of Service</a> and <a href="#" id="privacy-link">Privacy Policy</a>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MAIN APPLICATION SHELL  (hidden before login)
+══════════════════════════════════════════════════════════════════════════════ -->
+<div id="app-shell" aria-hidden="true" style="display:none;">
+
+  <!-- Mobile nav backdrop -->
+  <div id="nav-backdrop" class="nav-backdrop" role="button" aria-label="Close navigation" tabindex="0"></div>
+
+  <!-- ── Sidebar Navigation ───────────────────────────────────────────────── -->
+  <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 4C24 4 10 18 10 32C10 40.837 16.163 48 24 48C31.837 48 38 40.837 38 32C38 18 24 4 24 4Z" fill="url(#flame-sb)"/>
+            <path d="M24 28C24 28 17 35 17 40C17 44.418 20.134 48 24 48C27.866 48 31 44.418 31 40C31 35 24 28 24 28Z" fill="url(#inner-sb)"/>
+            <defs>
+              <linearGradient id="flame-sb" x1="24" y1="4" x2="24" y2="48" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#f97316"/><stop offset="1" stop-color="#ef4444"/>
+              </linearGradient>
+              <linearGradient id="inner-sb" x1="24" y1="28" x2="24" y2="48" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#fef3c7"/><stop offset="1" stop-color="#fbbf24"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="sidebar-logo-name">Fluido</span>
+      </div>
+      <button id="sidebar-close" class="sidebar-close-btn icon-btn" aria-label="Close sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Module navigation">
+      <ul role="list">
+        <li>
+          <button class="nav-item active" data-view="view-welcome" id="nav-welcome" aria-current="page" aria-label="Welcome Dashboard">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </span>
+            <span class="nav-label">Dashboard</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-item" data-view="view-new-booking" id="nav-new-booking" aria-label="Gas New Booking">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </span>
+            <span class="nav-label">New Booking</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-item" data-view="view-gas-delivered" id="nav-gas-delivered" aria-label="Mark Gas as Delivered">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <span class="nav-label">Mark Delivered</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-item" data-view="view-booked-status" id="nav-booked-status" aria-label="Gas Booked Status">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </span>
+            <span class="nav-label">Booking Status</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-item" data-view="view-consumed-status" id="nav-consumed-status" aria-label="Gas Consumed Analytics">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </span>
+            <span class="nav-label">Consumption Analytics</span>
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Sheet Sync shortcut in sidebar -->
+    <div class="sidebar-footer">
+      <button id="btn-sheet-sync-sidebar" class="nav-item sheet-sync-item" aria-label="Google Sheets Sync">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </span>
+        <span class="nav-label">Sheets Sync</span>
+        <span id="sheet-sync-badge" class="sync-badge" aria-label="Sheet linked" hidden>✓</span>
+      </button>
+
+      <!-- User profile strip -->
+      <div class="user-strip" role="complementary" aria-label="Signed in user">
+        <img id="sidebar-avatar" class="user-avatar" src="" alt="User avatar" width="36" height="36" />
+        <div class="user-info">
+          <span id="sidebar-name" class="user-name"></span>
+          <span id="sidebar-email" class="user-email"></span>
+        </div>
+        <button id="btn-signout" class="icon-btn signout-btn" aria-label="Sign out of Fluido" title="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main Content Area ────────────────────────────────────────────────── -->
+  <div class="main-wrapper">
+
+    <!-- Top App Bar -->
+    <header class="topbar" role="banner">
+      <button id="btn-menu-toggle" class="icon-btn topbar-menu-btn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+
+      <div class="topbar-title-zone">
+        <h2 id="topbar-view-title" class="topbar-title">Dashboard</h2>
+      </div>
+
+      <div class="topbar-actions">
+        <!-- Sheet sync shortcut in topbar -->
+        <button id="btn-sheet-sync-topbar" class="icon-btn topbar-action-btn" aria-label="Google Sheets Sync" title="Sheets Sync">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </button>
+        <!-- Theme toggle in topbar -->
+        <button id="app-theme-toggle" class="theme-toggle-btn icon-btn topbar-action-btn" aria-label="Toggle colour theme" title="Toggle colour theme">
+          <span class="theme-icon theme-icon--sun" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </span>
+          <span class="theme-icon theme-icon--moon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ── View Container ──────────────────────────────────────────────────── -->
+    <main id="view-container" class="view-container" role="main">
+
+      <!-- ── Welcome / Dashboard View ──────────────────────────────────────── -->
+      <section id="view-welcome" class="view active" aria-labelledby="welcome-heading">
+        <div class="view-inner">
+          <div class="welcome-hero">
+            <div id="welcome-avatar-wrap" class="welcome-avatar-wrap" aria-hidden="true">
+              <img id="welcome-avatar" class="welcome-avatar" src="" alt="" width="80" height="80" />
+              <div class="welcome-avatar-ring"></div>
+            </div>
+            <div class="welcome-text">
+              <h1 id="welcome-heading">Welcome back, <span id="welcome-name">—</span></h1>
+              <p id="welcome-email" class="welcome-email"></p>
+            </div>
+          </div>
+
+          <!-- KPI Cards -->
+          <div class="kpi-grid" role="list" aria-label="Key performance indicators">
+            <article class="kpi-card kpi-total" role="listitem" aria-label="Total bookings">
+              <div class="kpi-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              </div>
+              <div class="kpi-body">
+                <span class="kpi-label">Total Bookings</span>
+                <span class="kpi-value" id="kpi-total">—</span>
+              </div>
+            </article>
+            <article class="kpi-card kpi-delivered" role="listitem" aria-label="Delivered bookings">
+              <div class="kpi-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              </div>
+              <div class="kpi-body">
+                <span class="kpi-label">Delivered</span>
+                <span class="kpi-value" id="kpi-delivered">—</span>
+              </div>
+            </article>
+            <article class="kpi-card kpi-pending" role="listitem" aria-label="Pending delivery bookings">
+              <div class="kpi-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div class="kpi-body">
+                <span class="kpi-label">Pending Delivery</span>
+                <span class="kpi-value" id="kpi-pending">—</span>
+              </div>
+            </article>
+            <article class="kpi-card kpi-sheet" role="listitem" aria-label="Google Sheet link status">
+              <div class="kpi-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div class="kpi-body">
+                <span class="kpi-label">Linked Sheet</span>
+                <span class="kpi-value" id="kpi-sheet-status">—</span>
+              </div>
+            </article>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="quick-actions">
+            <h2 class="section-heading">Quick Actions</h2>
+            <div class="quick-action-grid">
+              <button class="quick-action-card" data-view="view-new-booking" aria-label="Create a new gas booking">
+                <span class="qa-icon" aria-hidden="true">➕</span>
+                <span>New Booking</span>
+              </button>
+              <button class="quick-action-card" data-view="view-gas-delivered" aria-label="Mark a booking as delivered">
+                <span class="qa-icon" aria-hidden="true">✅</span>
+                <span>Mark Delivered</span>
+              </button>
+              <button class="quick-action-card" data-view="view-booked-status" aria-label="View booking status chart">
+                <span class="qa-icon" aria-hidden="true">📊</span>
+                <span>View Status</span>
+              </button>
+              <button class="quick-action-card" id="qa-sheets-btn" aria-label="Open Sheets sync panel">
+                <span class="qa-icon" aria-hidden="true">📄</span>
+                <span>Sheets Sync</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Recent bookings mini table -->
+          <div class="recent-bookings-section">
+            <h2 class="section-heading">Recent Bookings</h2>
+            <div id="recent-bookings-container" class="recent-bookings-container">
+              <p class="empty-state-msg" id="recent-empty-msg">No bookings yet. Create your first booking to get started.</p>
+              <table id="recent-bookings-table" class="data-table" aria-label="Recent bookings" hidden>
+                <thead>
+                  <tr>
+                    <th scope="col">Booking ID</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Cost (₹)</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-bookings-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── New Booking View ───────────────────────────────────────────────── -->
+      <section id="view-new-booking" class="view" aria-labelledby="new-booking-heading" aria-hidden="true" hidden>
+        <div class="view-inner view-inner--narrow">
+          <div class="view-header">
+            <h1 id="new-booking-heading">New Gas Booking</h1>
+            <p class="view-subtitle">Fill in the details below to register a new LPG cylinder booking.</p>
+          </div>
+          <form id="form-new-booking" class="booking-form" novalidate autocomplete="off" aria-label="New booking form">
+            <div class="form-group">
+              <label for="input-booking-id" class="form-label">Booking ID <span class="req-star" aria-hidden="true">*</span><span class="sr-only">(required)</span></label>
+              <input type="text" id="input-booking-id" name="bookingId" class="form-input" placeholder="e.g. BK-20241001" required maxlength="80" autocomplete="off" spellcheck="false" aria-describedby="booking-id-hint" />
+              <span class="form-hint" id="booking-id-hint">Unique alphanumeric identifier for this booking.</span>
+              <span class="form-error" id="error-booking-id" role="alert" aria-live="polite"></span>
+            </div>
+            <div class="form-group">
+              <label for="input-dac-id" class="form-label">DAC ID <span class="req-star" aria-hidden="true">*</span><span class="sr-only">(required)</span></label>
+              <input type="text" id="input-dac-id" name="dacId" class="form-input" placeholder="e.g. 948273" required maxlength="40" autocomplete="off" spellcheck="false" aria-describedby="dac-id-hint" />
+              <span class="form-hint" id="dac-id-hint">Delivery Authentication Code provided by the agency.</span>
+              <span class="form-error" id="error-dac-id" role="alert" aria-live="polite"></span>
+            </div>
+            <div class="form-group">
+              <label for="input-booking-date" class="form-label">Booking Date <span class="req-star" aria-hidden="true">*</span><span class="sr-only">(required)</span></label>
+              <input type="date" id="input-booking-date" name="bookingDate" class="form-input" required aria-describedby="booking-date-hint" />
+              <span class="form-hint" id="booking-date-hint">The date on which the booking was made.</span>
+              <span class="form-error" id="error-booking-date" role="alert" aria-live="polite"></span>
+            </div>
+            <div class="form-group">
+              <label for="input-cost" class="form-label">Cost (₹) <span class="req-star" aria-hidden="true">*</span><span class="sr-only">(required)</span></label>
+              <input type="number" id="input-cost" name="cost" class="form-input" placeholder="e.g. 950.00" required min="1" step="0.01" aria-describedby="cost-hint" />
+              <span class="form-hint" id="cost-hint">Total cost of this booking in Indian Rupees.</span>
+              <span class="form-error" id="error-cost" role="alert" aria-live="polite"></span>
+            </div>
+            <div class="form-actions">
+              <button type="reset" class="btn btn-ghost" id="btn-booking-reset">Clear Form</button>
+              <button type="submit" class="btn btn-primary" id="btn-booking-submit" aria-busy="false">
+                <span class="btn-text">Create Booking</span>
+                <span class="btn-spinner" aria-hidden="true"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ── Gas Delivered View ─────────────────────────────────────────────── -->
+      <section id="view-gas-delivered" class="view" aria-labelledby="delivered-heading" aria-hidden="true" hidden>
+        <div class="view-inner view-inner--narrow">
+          <div class="view-header">
+            <h1 id="delivered-heading">Mark Gas as Delivered</h1>
+            <p class="view-subtitle">Enter the Booking ID to update delivery status for a pending booking.</p>
+          </div>
+          <form id="form-gas-delivered" class="booking-form" novalidate autocomplete="off" aria-label="Mark delivered form">
+            <div class="form-group">
+              <label for="input-deliver-booking-id" class="form-label">Booking ID <span class="req-star" aria-hidden="true">*</span><span class="sr-only">(required)</span></label>
+              <input type="text" id="input-deliver-booking-id" name="deliverBookingId" class="form-input" placeholder="e.g. BK-20241001" required maxlength="80" autocomplete="off" spellcheck="false" />
+              <span class="form-error" id="error-deliver-booking-id" role="alert" aria-live="polite"></span>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="btn-delivered-submit" aria-busy="false">
+                <span class="btn-text">Mark as Delivered</span>
+                <span class="btn-spinner" aria-hidden="true"></span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Result panel -->
+          <div id="deliver-result-panel" class="result-panel" role="region" aria-live="polite" aria-label="Delivery result" hidden>
+            <div id="deliver-result-content"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Booked Status View ─────────────────────────────────────────────── -->
+      <section id="view-booked-status" class="view" aria-labelledby="booked-status-heading" aria-hidden="true" hidden>
+        <div class="view-inner">
+          <div class="view-header">
+            <h1 id="booked-status-heading">Booking Status</h1>
+            <p class="view-subtitle">Visual breakdown of all gas bookings and their delivery status.</p>
+          </div>
+
+          <!-- Filter controls -->
+          <div class="chart-controls" role="group" aria-label="Booking status filter">
+            <button class="filter-btn active" data-filter="all" id="filter-all">All</button>
+            <button class="filter-btn" data-filter="delivered" id="filter-delivered">Delivered</button>
+            <button class="filter-btn" data-filter="pending" id="filter-pending">Pending</button>
+          </div>
+
+          <!-- Chart -->
+          <div class="chart-card" role="img" aria-label="Booking status bar chart">
+            <div class="chart-wrapper" id="status-chart-wrapper">
+              <canvas id="chart-booked-status" aria-label="Booking status chart" role="img"></canvas>
+            </div>
+            <div id="status-chart-empty" class="chart-empty" hidden>
+              <span aria-hidden="true">📊</span>
+              <p>No booking data to display.</p>
+            </div>
+          </div>
+
+          <!-- Data table -->
+          <div class="table-card">
+            <div class="table-responsive">
+              <table id="status-table" class="data-table" aria-label="Booking status details">
+                <thead>
+                  <tr>
+                    <th scope="col">Booking ID</th>
+                    <th scope="col">DAC ID</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Cost (₹)</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Delivered At</th>
+                  </tr>
+                </thead>
+                <tbody id="status-table-tbody">
+                  <tr><td colspan="6" class="empty-td">No data available.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Consumed Status View ───────────────────────────────────────────── -->
+      <section id="view-consumed-status" class="view" aria-labelledby="consumed-heading" aria-hidden="true" hidden>
+        <div class="view-inner">
+          <div class="view-header">
+            <h1 id="consumed-heading">Consumption Analytics</h1>
+            <p class="view-subtitle">Monthly gas cylinder consumption trends by year.</p>
+          </div>
+
+          <div class="chart-controls" role="group" aria-label="Year selector">
+            <label for="year-select" class="sr-only">Select year</label>
+            <select id="year-select" class="year-select" aria-label="Select year to display">
+              <option value="all">All Years</option>
+            </select>
+          </div>
+
+          <div class="chart-card" role="img" aria-label="Monthly consumption bar chart">
+            <div class="chart-wrapper" id="consumed-chart-wrapper">
+              <canvas id="chart-consumed-status" aria-label="Monthly gas consumption chart" role="img"></canvas>
+            </div>
+            <div id="consumed-chart-empty" class="chart-empty" hidden>
+              <span aria-hidden="true">📈</span>
+              <p>No consumption data to display yet.</p>
+            </div>
+          </div>
+
+          <!-- Annual summary table -->
+          <div class="table-card">
+            <div class="table-responsive">
+              <table id="consumed-summary-table" class="data-table" aria-label="Annual consumption summary">
+                <thead>
+                  <tr>
+                    <th scope="col">Year</th>
+                    <th scope="col">Total Cylinders</th>
+                    <th scope="col">Total Cost (₹)</th>
+                    <th scope="col">Avg Cost / Cylinder (₹)</th>
+                    <th scope="col">Peak Month</th>
+                  </tr>
+                </thead>
+                <tbody id="consumed-summary-tbody">
+                  <tr><td colspan="5" class="empty-td">No data available.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main><!-- /view-container -->
+  </div><!-- /main-wrapper -->
+</div><!-- /app-shell -->
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     GOOGLE SHEETS SYNC MODAL
+══════════════════════════════════════════════════════════════════════════════ -->
+<div id="sheets-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="sheets-modal-title" aria-hidden="true" hidden>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h2 id="sheets-modal-title" class="modal-title">
+        <svg class="modal-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Google Sheets Sync
+      </h2>
+      <button id="btn-close-modal" class="icon-btn modal-close-btn" aria-label="Close Sheets Sync panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-body" id="sheets-modal-body">
+      <!-- Content rendered dynamically by app.js based on link state -->
+      <p class="modal-loading">Loading sheet status…</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SYNC KEY PROMPT MODAL  (key-gated pull sync & sheet linking)
+══════════════════════════════════════════════════════════════════════════════ -->
+<div id="sync-key-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="sync-key-modal-title" aria-hidden="true" hidden>
+  <div class="modal-dialog modal-dialog--sm">
+    <div class="modal-header">
+      <h2 id="sync-key-modal-title" class="modal-title">
+        <svg class="modal-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span id="sync-key-modal-title-text">Sync Permission Key</span>
+      </h2>
+      <button id="btn-close-sync-key-modal" class="icon-btn modal-close-btn" aria-label="Close Sync Key panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p id="sync-key-modal-description" class="modal-description">Enter your Sync Permission Key to authorize this operation.</p>
+      <form id="form-sync-key" novalidate autocomplete="off" aria-label="Sync key entry form">
+        <div class="form-group">
+          <label for="input-sync-key" class="form-label">Sync Key <span class="req-star" aria-hidden="true">*</span></label>
+          <div class="input-password-wrap">
+            <input type="password" id="input-sync-key" name="syncKey" class="form-input" placeholder="Enter your sync key" required autocomplete="off" aria-describedby="sync-key-hint" />
+            <button type="button" id="btn-toggle-sync-key-vis" class="input-password-toggle icon-btn" aria-label="Show/hide sync key">
+              <svg class="eye-icon eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-icon eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+          <span class="form-hint" id="sync-key-hint">This key was set when you first linked or generated your Google Sheet.</span>
+          <span class="form-error" id="error-sync-key" role="alert" aria-live="polite"></span>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="btn-sync-key-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-sync-key-confirm" aria-busy="false">
+            <span class="btn-text">Confirm</span>
+            <span class="btn-spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     CONFIRMATION DIALOG MODAL  (generic confirm/cancel)
+══════════════════════════════════════════════════════════════════════════════ -->
+<div id="confirm-modal" class="modal-overlay" role="alertdialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-desc" aria-hidden="true" hidden>
+  <div class="modal-dialog modal-dialog--sm">
+    <div class="modal-header">
+      <h2 id="confirm-modal-title" class="modal-title">Confirm Action</h2>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-modal-desc" class="modal-description"></p>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" id="btn-confirm-cancel">Cancel</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-ok">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════════════════════════════════════════ -->
+<!-- Chart.js v4 via CDN — loaded synchronously (no defer) to guarantee
+     the global `Chart` constructor is defined before the ES module fires -->
+<script
+  src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+  crossorigin="anonymous"
+></script>
+<!-- Firebase App (modular CDN v10+) -->
+<script type="module" src="app.js"></script>
+</body>
+</html>

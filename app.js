@@ -1031,7 +1031,9 @@ async function ensureGoogleAccessToken() {
     sessionStorage.setItem('fluido_g_token_exp', String(Date.now() + 55 * 60 * 1000));
     return token;
   } catch (err) {
-    if (err.code !== 'auth/popup-closed-by-user') {
+    if (err.code === 'auth/popup-blocked') {
+      showToast('warning', 'Pop-Up Blocked', 'Your browser blocked the Google authentication window. Please enable pop-ups for this site in your browser bar and try again.', 8000);
+    } else if (err.code !== 'auth/popup-closed-by-user') {
       showToast('error', 'Google Auth Failed', err.message);
     }
     return null;
@@ -1647,7 +1649,6 @@ function bindEventListeners() {
   DOM.btnGoogleSignin.addEventListener('click', async () => {
     setButtonBusy(DOM.btnGoogleSignin, true);
     try {
-      await setPersistence(auth, browserLocalPersistence);
       const provider = new GoogleAuthProvider();
       GOOGLE_SCOPES.forEach(s => provider.addScope(s));
       const result = await signInWithPopup(auth, provider);
@@ -1658,9 +1659,12 @@ function bindEventListeners() {
         sessionStorage.setItem('fluido_g_token_exp', String(Date.now() + 55 * 60 * 1000));
       }
     } catch (err) {
-      if (err.code !== 'auth/popup-closed-by-user') {
+      if (err.code === 'auth/popup-blocked') {
+        showToast('warning', 'Pop-Up Blocked', 'Your browser blocked the sign-in pop-up. Please allow pop-ups for this site in your browser address bar and click Sign In again.', 8000);
+      } else if (err.code !== 'auth/popup-closed-by-user') {
         showToast('error', 'Sign-In Failed', err.message || 'Google sign-in failed. Try again.');
       }
+    } finally {
       setButtonBusy(DOM.btnGoogleSignin, false);
     }
   });

@@ -692,14 +692,26 @@ function renderBookedStatusChart(bookings, filter = 'all') {
   if (DOM.statusChartScrollContainer) DOM.statusChartScrollContainer.hidden = isEmpty;
   DOM.statusChartEmpty.hidden = !isEmpty;
   if (DOM.statusScrollHint) DOM.statusScrollHint.hidden = true;
-  if (isEmpty) return;
+
+  if (isEmpty) {
+    const emptyMsg = $('status-chart-empty-msg');
+    if (emptyMsg) {
+      emptyMsg.textContent = filter === 'pending'
+        ? 'No pending bookings! All gas cylinders are delivered.'
+        : (filter === 'delivered'
+          ? 'No delivered bookings found for this filter.'
+          : 'No booking data to display.');
+    }
+    return;
+  }
 
   // ── Responsive Dynamic Width & Horizontal Scroll Management ──
-  // Fixes the issue where dense data (especially in "All" filter) squashes bars into tiny, short slivers on mobile.
+  // Fixes the issue where dense data squashes bars into tiny slivers,
+  // and guarantees that pending/delivered never get cut off or become short.
   const scrollContainer = DOM.statusChartScrollContainer || DOM.statusChartWrapper.parentElement;
   const containerWidth = scrollContainer ? scrollContainer.clientWidth : 0;
   const isMobile = window.innerWidth < 640;
-  const minBarSlot = isMobile ? 58 : 50;
+  const minBarSlot = isMobile ? 64 : 52;
   const minRequiredWidth = filtered.length * minBarSlot;
 
   if (containerWidth > 0 && minRequiredWidth > containerWidth) {
@@ -709,6 +721,21 @@ function renderBookedStatusChart(bookings, filter = 'all') {
     DOM.statusChartWrapper.style.width = '100%';
     if (DOM.statusScrollHint) DOM.statusScrollHint.hidden = true;
   }
+
+  // CRITICAL FIX: Reset scroll position to 0 whenever filter changes.
+  // Prevents canvas from being scrolled off-screen when switching from a wide "All" view to a narrower "Pending" view.
+  if (scrollContainer) {
+    scrollContainer.scrollLeft = 0;
+  }
+
+  // Clear previous Chart.js instance and purge residual inline styles/dimensions on canvas
+  if (State.charts.bookedStatus) {
+    State.charts.bookedStatus.destroy();
+    State.charts.bookedStatus = null;
+  }
+  DOM.chartBookedStatus.removeAttribute('style');
+  DOM.chartBookedStatus.width = 0;
+  DOM.chartBookedStatus.height = 0;
 
   const labels = filtered.map(b => `${b.bookingId}\n${b.bookingDate}`);
   const data = filtered.map(b => b.cost);
@@ -721,10 +748,15 @@ function renderBookedStatusChart(bookings, filter = 'all') {
     b.delivered ? '#10B981' : '#EF4444'
   );
 
-  if (State.charts.bookedStatus) {
-    State.charts.bookedStatus.destroy();
-    State.charts.bookedStatus = null;
-  }
+  // Dynamic bar thickness and proportions: single or few items stay bold and solid, never thin/stubby
+  const barCount = filtered.length;
+  const maxBarThickness = barCount === 1 ? 64 : (barCount <= 3 ? 54 : 44);
+  const categoryPercentage = barCount === 1 ? 0.45 : (barCount === 2 ? 0.6 : 0.8);
+  const barPercentage = barCount === 1 ? 0.7 : 0.9;
+
+  // Unified Y-scale: ensures a ₹950 booking is the exact same tall height in All, Delivered, and Pending
+  const allMaxCost = bookings.reduce((m, b) => Math.max(m, parseFloat(b.cost) || 0), 1000);
+  const suggestedMax = Math.ceil((allMaxCost * 1.15) / 100) * 100;
 
   State.charts.bookedStatus = new Chart(DOM.chartBookedStatus, {
     type: 'bar',
@@ -738,8 +770,10 @@ function renderBookedStatusChart(bookings, filter = 'all') {
         borderWidth: 2,
         borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 0, bottomRight: 0 },
         borderSkipped: false,
-        maxBarThickness: 42,
-        minBarLength: 6,
+        maxBarThickness,
+        categoryPercentage,
+        barPercentage,
+        minBarLength: 8,
       }],
     },
     options: {
@@ -786,6 +820,8 @@ function renderBookedStatusChart(bookings, filter = 'all') {
           border: { display: false },
         },
         y: {
+          suggestedMin: 0,
+          suggestedMax,
           ticks: {
             color: textColor,
             font: { family: "'Inter', sans-serif", size: isMobile ? 10 : 11 },
@@ -885,11 +921,15 @@ function renderConsumedChart(bookings, year = 'all') {
   DOM.consumedChartEmpty.hidden = !isEmpty;
   if (DOM.consumedScrollHint) DOM.consumedScrollHint.hidden = true;
 
-  if (State.charts.consumedStatus) {
-    State.charts.consumedStatus.destroy();
-    State.charts.consumedStatus = null;
+  if (isEmpty) {
+    const emptyMsg = $('consumed-chart-empty-msg');
+    if (emptyMsg) {
+      emptyMsg.textContent = year === 'all'
+        ? 'No consumption data to display yet.'
+        : `No consumption data found for year ${year}.`;
+    }
+    return;
   }
-  if (isEmpty) return;
 
   // ── Responsive Dynamic Width for Multi-Year Comparison on Mobile ──
   const scrollContainer = DOM.consumedChartScrollContainer || DOM.consumedChartWrapper.parentElement;
@@ -904,6 +944,18 @@ function renderConsumedChart(bookings, year = 'all') {
     DOM.consumedChartWrapper.style.width = '100%';
     if (DOM.consumedScrollHint) DOM.consumedScrollHint.hidden = true;
   }
+
+  if (scrollContainer) {
+    scrollContainer.scrollLeft = 0;
+  }
+
+  if (State.charts.consumedStatus) {
+    State.charts.consumedStatus.destroy();
+    State.charts.consumedStatus = null;
+  }
+  DOM.chartConsumedStatus.removeAttribute('style');
+  DOM.chartConsumedStatus.width = 0;
+  DOM.chartConsumedStatus.height = 0;
 
   const datasets = agg.map((entry, i) => {
     const col = YEAR_COLORS[i % YEAR_COLORS.length];

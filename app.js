@@ -122,11 +122,15 @@ const DOM = {
   // Booked status
   chartBookedStatus: $('chart-booked-status'),
   statusChartWrapper: $('status-chart-wrapper'),
+  statusChartScrollContainer: $('status-chart-scroll-container'),
+  statusScrollHint: $('status-scroll-hint'),
   statusChartEmpty: $('status-chart-empty'),
   statusTbody: $('status-table-tbody'),
   // Consumed
   chartConsumedStatus: $('chart-consumed-status'),
-  consumedChartWrapper: $('consumed-chart-wrapper'),  // BUG-FIX #4: was missing from DOM cache
+  consumedChartWrapper: $('consumed-chart-wrapper'),
+  consumedChartScrollContainer: $('consumed-chart-scroll-container'),
+  consumedScrollHint: $('consumed-scroll-hint'),
   consumedChartEmpty: $('consumed-chart-empty'),
   yearSelect: $('year-select'),
   consumedSummaryTbody: $('consumed-summary-tbody'),
@@ -685,15 +689,33 @@ function renderBookedStatusChart(bookings, filter = 'all') {
   const isEmpty = filtered.length === 0;
 
   DOM.statusChartWrapper.hidden = isEmpty;
+  if (DOM.statusChartScrollContainer) DOM.statusChartScrollContainer.hidden = isEmpty;
   DOM.statusChartEmpty.hidden = !isEmpty;
+  if (DOM.statusScrollHint) DOM.statusScrollHint.hidden = true;
   if (isEmpty) return;
+
+  // ── Responsive Dynamic Width & Horizontal Scroll Management ──
+  // Fixes the issue where dense data (especially in "All" filter) squashes bars into tiny, short slivers on mobile.
+  const scrollContainer = DOM.statusChartScrollContainer || DOM.statusChartWrapper.parentElement;
+  const containerWidth = scrollContainer ? scrollContainer.clientWidth : 0;
+  const isMobile = window.innerWidth < 640;
+  const minBarSlot = isMobile ? 58 : 50;
+  const minRequiredWidth = filtered.length * minBarSlot;
+
+  if (containerWidth > 0 && minRequiredWidth > containerWidth) {
+    DOM.statusChartWrapper.style.width = `${minRequiredWidth}px`;
+    if (DOM.statusScrollHint) DOM.statusScrollHint.hidden = false;
+  } else {
+    DOM.statusChartWrapper.style.width = '100%';
+    if (DOM.statusScrollHint) DOM.statusScrollHint.hidden = true;
+  }
 
   const labels = filtered.map(b => `${b.bookingId}\n${b.bookingDate}`);
   const data = filtered.map(b => b.cost);
   const bgColors = filtered.map(b =>
     b.delivered
-      ? 'rgba(16, 185, 129, 0.80)'
-      : 'rgba(239, 68, 68, 0.80)'
+      ? 'rgba(16, 185, 129, 0.85)'
+      : 'rgba(239, 68, 68, 0.85)'
   );
   const borderColors = filtered.map(b =>
     b.delivered ? '#10B981' : '#EF4444'
@@ -714,8 +736,10 @@ function renderBookedStatusChart(bookings, filter = 'all') {
         backgroundColor: bgColors,
         borderColor: borderColors,
         borderWidth: 2,
-        borderRadius: 6,
+        borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 0, bottomRight: 0 },
         borderSkipped: false,
+        maxBarThickness: 42,
+        minBarLength: 6,
       }],
     },
     options: {
@@ -752,8 +776,11 @@ function renderBookedStatusChart(bookings, filter = 'all') {
         x: {
           ticks: {
             color: textColor,
-            font: { family: "'Inter', sans-serif", size: 11 },
-            maxRotation: 45,
+            font: { family: "'Inter', sans-serif", size: isMobile ? 10 : 11, weight: '500' },
+            maxRotation: 40,
+            minRotation: 0,
+            autoSkip: false,
+            padding: 6,
           },
           grid: { color: gridColor },
           border: { display: false },
@@ -761,8 +788,9 @@ function renderBookedStatusChart(bookings, filter = 'all') {
         y: {
           ticks: {
             color: textColor,
-            font: { family: "'Inter', sans-serif", size: 11 },
+            font: { family: "'Inter', sans-serif", size: isMobile ? 10 : 11 },
             callback: v => `₹${v}`,
+            padding: 8,
           },
           grid: { color: gridColor },
           border: { display: false },
@@ -853,13 +881,29 @@ function renderConsumedChart(bookings, year = 'all') {
   // BUG-FIX #3: consumedChartWrapper visibility was never toggled (unlike statusChartWrapper).
   // Without this, the canvas container stays hidden/visible regardless of data state.
   DOM.consumedChartWrapper.hidden = isEmpty;
+  if (DOM.consumedChartScrollContainer) DOM.consumedChartScrollContainer.hidden = isEmpty;
   DOM.consumedChartEmpty.hidden = !isEmpty;
+  if (DOM.consumedScrollHint) DOM.consumedScrollHint.hidden = true;
 
   if (State.charts.consumedStatus) {
     State.charts.consumedStatus.destroy();
     State.charts.consumedStatus = null;
   }
   if (isEmpty) return;
+
+  // ── Responsive Dynamic Width for Multi-Year Comparison on Mobile ──
+  const scrollContainer = DOM.consumedChartScrollContainer || DOM.consumedChartWrapper.parentElement;
+  const containerWidth = scrollContainer ? scrollContainer.clientWidth : 0;
+  const isMobile = window.innerWidth < 640;
+  const minRequiredWidth = agg.length > 1 && isMobile ? Math.max(540, agg.length * 12 * 18) : 0;
+
+  if (containerWidth > 0 && minRequiredWidth > containerWidth) {
+    DOM.consumedChartWrapper.style.width = `${minRequiredWidth}px`;
+    if (DOM.consumedScrollHint) DOM.consumedScrollHint.hidden = false;
+  } else {
+    DOM.consumedChartWrapper.style.width = '100%';
+    if (DOM.consumedScrollHint) DOM.consumedScrollHint.hidden = true;
+  }
 
   const datasets = agg.map((entry, i) => {
     const col = YEAR_COLORS[i % YEAR_COLORS.length];
@@ -869,8 +913,9 @@ function renderConsumedChart(bookings, year = 'all') {
       backgroundColor: col.bg,
       borderColor: col.border,
       borderWidth: 2,
-      borderRadius: 5,
+      borderRadius: { topLeft: 5, topRight: 5, bottomLeft: 0, bottomRight: 0 },
       borderSkipped: false,
+      maxBarThickness: 36,
     };
   });
 
@@ -885,7 +930,7 @@ function renderConsumedChart(bookings, year = 'all') {
           display: agg.length > 1,
           labels: {
             color: textColor,
-            font: { family: "'Inter', sans-serif", size: 12 },
+            font: { family: "'Inter', sans-serif", size: isMobile ? 11 : 12 },
             boxWidth: 12,
             boxHeight: 12,
             borderRadius: 4,
@@ -906,14 +951,14 @@ function renderConsumedChart(bookings, year = 'all') {
       },
       scales: {
         x: {
-          ticks: { color: textColor, font: { family: "'Inter', sans-serif", size: 12 } },
+          ticks: { color: textColor, font: { family: "'Inter', sans-serif", size: isMobile ? 10 : 12 } },
           grid: { color: gridColor },
           border: { display: false },
         },
         y: {
           ticks: {
             color: textColor,
-            font: { family: "'Inter', sans-serif", size: 12 },
+            font: { family: "'Inter', sans-serif", size: isMobile ? 10 : 12 },
             stepSize: 1,
             callback: v => Number.isInteger(v) ? v : null,
           },
@@ -1845,6 +1890,19 @@ function bindEventListeners() {
   // ── Legal link placeholders
   $('terms-link')?.addEventListener('click', e => { e.preventDefault(); showToast('info', 'Terms of Service', 'Terms document not yet published.'); });
   $('privacy-link')?.addEventListener('click', e => { e.preventDefault(); showToast('info', 'Privacy Policy', 'Privacy policy document not yet published.'); });
+
+  // ── Debounced Window Resize Handler for Fluid Responsive Charts ──
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (State.activeView === 'view-booked-status' && State.bookings.length > 0) {
+        renderBookedStatusChart(State.bookings, State.currentFilter);
+      } else if (State.activeView === 'view-consumed-status' && State.bookings.length > 0) {
+        renderConsumedChart(State.bookings, State.selectedYear);
+      }
+    }, 150);
+  });
 }
 
 function openSheetsModal() {

@@ -1296,9 +1296,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .chart-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 16px;
+}
+.filter-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.filter-select-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .filter-btn {
   padding: 6px 16px;
@@ -1562,6 +1574,29 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .chart-empty {
     height: 380px;
     min-height: 380px;
+  }
+
+  .chart-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .filter-btn-group {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+  }
+  .filter-btn-group .filter-btn {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px;
+    font-size: 0.8125rem;
+  }
+  .filter-select-group {
+    width: 100%;
+  }
+  .filter-select-group .year-select {
+    width: 100%;
   }
 
   .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }

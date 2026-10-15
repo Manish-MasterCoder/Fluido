@@ -61,6 +61,7 @@ const State = {
   },
   activeView: 'view-welcome',
   currentFilter: 'all',
+  statusYear: 'all',
   selectedYear: 'all',
   syncKeyPendingAction: null, // callback awaiting sync key verification
   confirmPendingResolve: null,
@@ -126,6 +127,7 @@ const DOM = {
   statusScrollHint: $('status-scroll-hint'),
   statusChartEmpty: $('status-chart-empty'),
   statusTbody: $('status-table-tbody'),
+  statusYearSelect: $('status-year-select'),
   // Consumed
   chartConsumedStatus: $('chart-consumed-status'),
   consumedChartWrapper: $('consumed-chart-wrapper'),
@@ -176,7 +178,7 @@ const ThemeEngine = (() => {
     const current = document.documentElement.getAttribute('data-theme') || DEFAULT;
     apply(current === 'dark' ? 'light' : 'dark');
     // Redraw charts for new theme colors
-    if (State.activeView === 'view-booked-status') renderBookedStatusChart(State.bookings, State.currentFilter);
+    if (State.activeView === 'view-booked-status') renderBookedStatusChart(State.bookings, State.currentFilter, State.statusYear);
     if (State.activeView === 'view-consumed-status') renderConsumedChart(State.bookings, State.selectedYear);
   }
 
@@ -341,8 +343,9 @@ function navigateTo(viewId) {
 
   // View-specific render
   if (viewId === 'view-booked-status') {
-    renderBookedStatusChart(State.bookings, State.currentFilter);
-    renderBookedStatusTable(State.bookings, State.currentFilter);
+    refreshYearSelect();
+    renderBookedStatusChart(State.bookings, State.currentFilter, State.statusYear);
+    renderBookedStatusTable(State.bookings, State.currentFilter, State.statusYear);
   }
   if (viewId === 'view-consumed-status') {
     refreshYearSelect();
@@ -483,8 +486,8 @@ function onBookingsUpdated() {
   refreshYearSelect();
 
   if (State.activeView === 'view-booked-status') {
-    renderBookedStatusChart(State.bookings, State.currentFilter);
-    renderBookedStatusTable(State.bookings, State.currentFilter);
+    renderBookedStatusChart(State.bookings, State.currentFilter, State.statusYear);
+    renderBookedStatusTable(State.bookings, State.currentFilter, State.statusYear);
   }
   if (State.activeView === 'view-consumed-status') {
     renderConsumedChart(State.bookings, State.selectedYear);
@@ -663,10 +666,14 @@ function getChartThemeColors() {
   };
 }
 
-function filterBookings(bookings, filter) {
-  if (filter === 'delivered') return bookings.filter(b => b.delivered);
-  if (filter === 'pending') return bookings.filter(b => !b.delivered);
-  return bookings;
+function filterBookings(bookings, filter = 'all', year = 'all') {
+  let list = bookings;
+  if (year && year !== 'all') {
+    list = list.filter(b => b.bookingDate && b.bookingDate.startsWith(year));
+  }
+  if (filter === 'delivered') return list.filter(b => b.delivered);
+  if (filter === 'pending') return list.filter(b => !b.delivered);
+  return list;
 }
 
 /**
@@ -683,8 +690,8 @@ function sortByBookingDateAsc(a, b) {
   return da.localeCompare(db);
 }
 
-function renderBookedStatusChart(bookings, filter = 'all') {
-  const filtered = filterBookings([...bookings].sort(sortByBookingDateAsc), filter);
+function renderBookedStatusChart(bookings, filter = 'all', year = 'all') {
+  const filtered = filterBookings([...bookings].sort(sortByBookingDateAsc), filter, year);
   const { gridColor, textColor } = getChartThemeColors();
   const isEmpty = filtered.length === 0;
 
@@ -696,11 +703,12 @@ function renderBookedStatusChart(bookings, filter = 'all') {
   if (isEmpty) {
     const emptyMsg = $('status-chart-empty-msg');
     if (emptyMsg) {
+      const yearSuffix = year !== 'all' ? ` in ${year}` : '';
       emptyMsg.textContent = filter === 'pending'
-        ? 'No pending bookings! All gas cylinders are delivered.'
+        ? `No pending bookings${yearSuffix}! All gas cylinders are delivered.`
         : (filter === 'delivered'
-          ? 'No delivered bookings found for this filter.'
-          : 'No booking data to display.');
+          ? `No delivered bookings found${yearSuffix}.`
+          : `No booking data to display${yearSuffix}.`);
     }
     return;
   }
@@ -837,12 +845,13 @@ function renderBookedStatusChart(bookings, filter = 'all') {
   });
 }
 
-function renderBookedStatusTable(bookings, filter = 'all') {
-  const filtered = filterBookings([...bookings].sort(sortByBookingDateAsc), filter);
+function renderBookedStatusTable(bookings, filter = 'all', year = 'all') {
+  const filtered = filterBookings([...bookings].sort(sortByBookingDateAsc), filter, year);
   const tbody = DOM.statusTbody;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-td">No bookings match this filter.</td></tr>';
+    const yearSuffix = year !== 'all' ? ` in ${year}` : '';
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-td">No bookings match this filter${yearSuffix}.</td></tr>`;
     return;
   }
 
@@ -1065,12 +1074,34 @@ function refreshYearSelect() {
       .map(b => b.bookingDate.substring(0, 4))
   )].sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
 
-  const current = DOM.yearSelect.value;
-  DOM.yearSelect.innerHTML = '<option value="all">All Years</option>' +
+  const optionsHtml = '<option value="all">All Years</option>' +
     years.map(y => `<option value="${sanitizeHTML(y)}">${sanitizeHTML(y)}</option>`).join('');
 
-  if (years.includes(current)) DOM.yearSelect.value = current;
-  else { DOM.yearSelect.value = 'all'; State.selectedYear = 'all'; }
+  // Consumed Status Year Select
+  if (DOM.yearSelect) {
+    const current = State.selectedYear || DOM.yearSelect.value;
+    DOM.yearSelect.innerHTML = optionsHtml;
+    if (years.includes(current)) {
+      DOM.yearSelect.value = current;
+      State.selectedYear = current;
+    } else {
+      DOM.yearSelect.value = 'all';
+      State.selectedYear = 'all';
+    }
+  }
+
+  // Booked Status Year Select
+  if (DOM.statusYearSelect) {
+    const currentStatusYear = State.statusYear || DOM.statusYearSelect.value;
+    DOM.statusYearSelect.innerHTML = optionsHtml;
+    if (years.includes(currentStatusYear)) {
+      DOM.statusYearSelect.value = currentStatusYear;
+      State.statusYear = currentStatusYear;
+    } else {
+      DOM.statusYearSelect.value = 'all';
+      State.statusYear = 'all';
+    }
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1658,6 +1689,9 @@ async function handleSignOut() {
   State.userProfile = null;
   State.bookings = [];
   State.googleToken = null;
+  State.currentFilter = 'all';
+  State.statusYear = 'all';
+  State.selectedYear = 'all';
 
   // 4. Wipe data containers
   DOM.recentTbody.innerHTML = '';
@@ -1802,13 +1836,20 @@ function bindEventListeners() {
       State.currentFilter = btn.dataset.filter;
       $$('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      renderBookedStatusChart(State.bookings, State.currentFilter);
-      renderBookedStatusTable(State.bookings, State.currentFilter);
+      renderBookedStatusChart(State.bookings, State.currentFilter, State.statusYear);
+      renderBookedStatusTable(State.bookings, State.currentFilter, State.statusYear);
     });
   });
 
-  // ── Year select
-  DOM.yearSelect.addEventListener('change', () => {
+  // ── Booked status year select
+  DOM.statusYearSelect?.addEventListener('change', () => {
+    State.statusYear = DOM.statusYearSelect.value;
+    renderBookedStatusChart(State.bookings, State.currentFilter, State.statusYear);
+    renderBookedStatusTable(State.bookings, State.currentFilter, State.statusYear);
+  });
+
+  // ── Consumed year select
+  DOM.yearSelect?.addEventListener('change', () => {
     State.selectedYear = DOM.yearSelect.value;
     renderConsumedChart(State.bookings, State.selectedYear);
   });
@@ -1949,7 +1990,7 @@ function bindEventListeners() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       if (State.activeView === 'view-booked-status' && State.bookings.length > 0) {
-        renderBookedStatusChart(State.bookings, State.currentFilter);
+        renderBookedStatusChart(State.bookings, State.currentFilter, State.statusYear);
       } else if (State.activeView === 'view-consumed-status' && State.bookings.length > 0) {
         renderConsumedChart(State.bookings, State.selectedYear);
       }

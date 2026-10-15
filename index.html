@@ -2,7 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Fluido — Manage and analyze your domestic LPG/Gas booking records with real-time cloud sync, Google Sheets integration, and rich analytics." />
   <meta name="theme-color" content="#0f1117" />
   <meta property="og:title" content="Fluido — LPG Gas Booking Manager" />
@@ -433,8 +433,13 @@
 
           <!-- Chart -->
           <div class="chart-card" role="img" aria-label="Booking status bar chart">
-            <div class="chart-wrapper" id="status-chart-wrapper">
-              <canvas id="chart-booked-status" aria-label="Booking status chart" role="img"></canvas>
+            <div class="chart-scroll-container" id="status-chart-scroll-container">
+              <div class="chart-wrapper" id="status-chart-wrapper">
+                <canvas id="chart-booked-status" aria-label="Booking status chart" role="img"></canvas>
+              </div>
+            </div>
+            <div id="status-scroll-hint" class="chart-scroll-hint" hidden aria-hidden="true">
+              <span>← Swipe horizontally to explore all bookings →</span>
             </div>
             <div id="status-chart-empty" class="chart-empty" hidden>
               <span aria-hidden="true">📊</span>
@@ -481,8 +486,13 @@
           </div>
 
           <div class="chart-card" role="img" aria-label="Monthly consumption bar chart">
-            <div class="chart-wrapper" id="consumed-chart-wrapper">
-              <canvas id="chart-consumed-status" aria-label="Monthly gas consumption chart" role="img"></canvas>
+            <div class="chart-scroll-container" id="consumed-chart-scroll-container">
+              <div class="chart-wrapper" id="consumed-chart-wrapper">
+                <canvas id="chart-consumed-status" aria-label="Monthly gas consumption chart" role="img"></canvas>
+              </div>
+            </div>
+            <div id="consumed-scroll-hint" class="chart-scroll-hint" hidden aria-hidden="true">
+              <span>← Swipe horizontally to explore all months →</span>
             </div>
             <div id="consumed-chart-empty" class="chart-empty" hidden>
               <span aria-hidden="true">📈</span>

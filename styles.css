@@ -503,7 +503,7 @@ input, select, textarea {
  * The main-wrapper transitions its margin-left in sync.
  */
 .sidebar {
-  width: var(--sidebar-width);
+  width: min(var(--sidebar-width), 85vw);
   flex-shrink: 0;
   height: 100vh;
   position: fixed;
@@ -981,7 +981,7 @@ input, select, textarea {
   border: 1px solid var(--input-border);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   width: 100%;
 }
@@ -1153,6 +1153,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .data-table {
   width: 100%;
+  min-width: 580px;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
@@ -1220,14 +1221,59 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: 24px;
   box-shadow: var(--shadow-sm);
   margin-bottom: 4px;
+  position: relative;
+}
+
+.chart-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-default) transparent;
+  padding-bottom: 4px;
+}
+.chart-scroll-container::-webkit-scrollbar {
+  height: 6px;
+}
+.chart-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chart-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: var(--radius-full);
 }
 
 .chart-wrapper {
   position: relative;
   width: 100%;
-  height: 360px;
+  height: 380px;
+  min-height: 380px;
+  transition: width 0.15s ease-out;
 }
-.chart-wrapper canvas { width: 100% !important; }
+.chart-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chart-scroll-hint {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0 2px;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  user-select: none;
+}
+.chart-scroll-hint span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elevated);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+}
 
 .chart-empty {
   display: flex;
@@ -1505,20 +1551,40 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 @media (max-width: 639px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-  .quick-action-grid { grid-template-columns: repeat(2, 1fr); }
+  .chart-card { padding: 16px 12px; }
+  .chart-wrapper {
+    height: 380px;
+    min-height: 380px;
+  }
+
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .quick-action-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 
   .form-actions {
     flex-direction: column;
   }
   .form-actions .btn { width: 100%; }
 
-  .chart-wrapper { height: 260px; }
-
-  #toast-container { bottom: 16px; right: 16px; }
+  #toast-container { bottom: 16px; right: 16px; left: 16px; }
+  .toast { max-width: 100%; width: 100%; }
 
   .modal-body { padding: 16px; }
   .modal-header { padding: 16px 16px 12px; }
+}
+
+@media (max-width: 480px) {
+  .topbar { padding: 0 12px; gap: 8px; }
+  .topbar-actions { gap: 4px; }
+  .topbar-actions .icon-btn { width: 36px; height: 36px; }
+  .view-container { padding: 16px 12px 36px; }
+  .welcome-hero { padding: 18px 14px; gap: 12px; }
+  .booking-form { padding: 18px 14px; }
+  .filter-btn { padding: 6px 12px; font-size: 0.8125rem; }
+  .kpi-card { padding: 14px 12px; }
+  .kpi-icon { width: 38px; height: 38px; }
+  .modal-dialog { margin: 8px; max-height: 94vh; border-radius: var(--radius-lg); }
+  .modal-header, .modal-body { padding: 14px 12px; }
+  .modal-actions-row .btn { width: 100%; }
 }
 
 @media (max-width: 400px) {

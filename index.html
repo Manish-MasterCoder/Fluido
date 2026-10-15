@@ -425,10 +425,18 @@
           </div>
 
           <!-- Filter controls -->
-          <div class="chart-controls" role="group" aria-label="Booking status filter">
-            <button class="filter-btn active" data-filter="all" id="filter-all">All</button>
-            <button class="filter-btn" data-filter="delivered" id="filter-delivered">Delivered</button>
-            <button class="filter-btn" data-filter="pending" id="filter-pending">Pending</button>
+          <div class="chart-controls" role="group" aria-label="Booking status filter and year selector">
+            <div class="filter-btn-group" role="group" aria-label="Filter by delivery status">
+              <button class="filter-btn active" data-filter="all" id="filter-all">All</button>
+              <button class="filter-btn" data-filter="delivered" id="filter-delivered">Delivered</button>
+              <button class="filter-btn" data-filter="pending" id="filter-pending">Pending</button>
+            </div>
+            <div class="filter-select-group">
+              <label for="status-year-select" class="sr-only">Filter bookings by year</label>
+              <select id="status-year-select" class="year-select" aria-label="Filter bookings by year">
+                <option value="all">All Years</option>
+              </select>
+            </div>
           </div>
 
           <!-- Chart -->
